@@ -1,13 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_to_do/task_controller.dart';
+
+import './todo_tasks.dart';
+import './task_manager.dart';
+import './tasks_database.dart';
+import 'dart:math';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class TasksForm extends StatelessWidget {
   final _formKey = GlobalKey<FormState>();
+  final Function addTaskS;
+  final TextEditingController titleController;
+  final TextEditingController bodyController;
+  final List<Map> listOfTasks;
+
+  TasksForm(this.addTaskS, this.titleController, this.bodyController,
+      this.listOfTasks);
+
+  // TasksForm.textFieldsControllers();
+
   @override
   Widget build(BuildContext context) {
-    return createForm();
+    return createForm(context);
   }
 
-  Widget createForm() {
+  Widget createForm(BuildContext buildContext) {
     return Form(
       key: _formKey,
       child: Column(
@@ -19,32 +36,55 @@ class TasksForm extends StatelessWidget {
             ),
             validator: (value) {
               if (value.isEmpty) {
-                return 'Please enter the title of task';
+                return 'Please enter the title of the task';
               }
               return null;
             },
+            controller: titleController,
           ),
-          Flexible(
-            child: TextFormField(
-              decoration: const InputDecoration(
-                hintText: 'Body of task',
-              ),
-              validator: (value) {
-                if (value.isEmpty) {
-                  return 'Please enter the body of task';
-                }
-                return null;
-              },
-            ),
+          TextFormField(
+            decoration:
+                const InputDecoration(hintText: 'Description of the task'),
+            validator: (value) {
+              if (value.isEmpty) {
+                return 'Please enter the description of the task';
+              }
+              return null;
+            },
+            controller: bodyController,
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: RaisedButton(
-              onPressed: () {
-                // Validate will return true if the form is valid, or false if
-                // the form is invalid.
+              onPressed: () async {
                 if (_formKey.currentState.validate()) {
-                  // Process data.
+                  try {
+                    var randomId = new Random();
+                    var item = TasksToDo(
+                        id: randomId.nextInt(100),
+                        title: titleController.text,
+                        body: bodyController.text);
+                    await TasksDatabase.db.insertTask(item);
+                  } catch (e) {
+                    Fluttertoast.showToast(
+                        msg: 'Note not saved',
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.TOP,
+                        timeInSecForIos: 1,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0);
+                  }
+
+                  addTaskS({
+                    'title': titleController.text,
+                    'body': bodyController.text
+                  });
+                  Navigator.push(
+                    buildContext,
+                    MaterialPageRoute(
+                        builder: (context) => TodoTasks(listOfTasks)),
+                  );
                 }
               },
               child: Text('Save'),
